@@ -66,6 +66,25 @@ def get_otp(request):
         user.save()
         data["email_sent"] = True
     return Response(data, status=status.HTTP_200_OK)
+    
+@api_view(["POST"])
+def verify_otp(request):
+    otp = request.data.get("otp")
+    email = request.data.get("email")
+    user = get_object_or_404(User, email=email)
+    if not otp:
+        return Response({'error': 'OTP is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if user is None:
+        return Response({"error": "Email does not exist"})
+    if not user.otp == otp:
+        return Response({"error": "otp does not match"})
+    user.otp = ""
+    user.save()
+    data = {
+            "message": "Otp succesfully send",
+            "verified":True
+        }
+    return Response(data, status=status.HTTP_200_OK)
 
 class TourAgentView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

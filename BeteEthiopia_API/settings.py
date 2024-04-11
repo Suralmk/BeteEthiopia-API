@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-oxz0r9p(qwt9=&#%x7j=t6*(0=$ksiy$60f!m^qkkrp(o46bim
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "192.168.0.77"]
+ALLOWED_HOSTS = ["127.0.0.1", "192.168.223.77", "192.168.137.77"]
 # Rest ramework setting
 
 
@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     "api",
 
     "rest_framework_simplejwt",
-    "corsheaders",
     "rest_framework"
 ]
 

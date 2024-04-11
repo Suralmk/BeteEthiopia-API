@@ -10,7 +10,7 @@ def user_directory_path(instance, filename):
     return 'user_{0}/{1}'.format(instance.user.id, filename)
 
 def image_directory_path(instance, filename):
-    return 'image_{0}/{1}'.format(instance.destination.name, filename)
+    return 'image_{0}/{1}'.format(instance.name, filename)
 
 def agent_directory_path(instance, filename):
     return 'agent_{0}/{1}'.format(instance.name, filename)
@@ -114,34 +114,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_active(self):
         return self.active
       
-
-# class Profile(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE ,related_name="profie_owner")
-#     first_name = models.CharField(max_length=100, default='Unknown', null=True, blank=True)
-#     last_name = models.CharField(max_length=100, default='Name', null=True, blank=True)
-#     profile_pic = models.ImageField(null=True, upload_to=user_directory_path, default="default_profile.png", blank=True)
-#     bg_pic = models.ImageField(upload_to=user_directory_path, null=True, default="default_bg.png", blank=True)
-#     bio = models.CharField(max_length=200, null=True, default="", blank=True)
-#     location = models.CharField(max_length=100, null=True, blank=True)
-#     birth_date = models.DateField(null=True, blank=True)
-#     phone = models.CharField(max_length=13, null=True, blank=True)
-#     follower = models.ManyToManyField(User, related_name="following" , blank=True)
-#     personal_intrests = models.CharField(null=True, max_length=200, blank=True)
-
-#         # print(request.user.following.all())
-#         # print(" followers " + str(profile.follower.all()))
-#     def __str__(self):
-#         return self.user.username
-    
-#     def get_absolute_url(self):
-#         return reverse('profile', args=[str(self.user.username)])
-    
-#     def get_total_follower(self):
-#         return self.follower.count()
-    
-#     def get_full_name(self):
-#         return str(self.first_name) + " "+ str(self.last_name)
-
 class TourAgent(models.Model):
     name = models.CharField(max_length=70)
     image = models.ImageField(upload_to=agent_directory_path, default="duck.png")
@@ -158,16 +130,23 @@ class TourAgentImages(models.Model):
         return self.agent.name
 
 class Destination(models.Model):
+    destination_category = (
+        ('culture', 'Culture'),
+        ('food', 'Food'),
+        ('wildlife', 'Wildlife'),
+        ('nature', 'Nature')    
+    )
     name = models.CharField(max_length=70)
     location = models.CharField(max_length=70)
     description = models.CharField(max_length=500)
     weather = models.CharField(max_length=500)
     accomodation = models.CharField(max_length=500)
+    category = models.CharField(max_length=15, choices=destination_category, default="All")
+    image = models.ImageField(upload_to=image_directory_path, default="duck.png")
     agent = models.ManyToManyField(TourAgent, related_name="agent_destination")
 
     def __str__(self):
         return self.name
-
 
 class DestinationImages(models.Model):
     destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name="images")
@@ -183,3 +162,18 @@ class Price(models.Model):
 
     def __str__(self):
         return str(self.agent ) + " / " + str(self.destination) + " / " + str(self.price)
+    
+# class Booking(models.Model):
+#     phone = models.IntegerField()
+#     country = models.CharField()
+#     guest_number = models.IntegerField()
+#     spedial_need = models.TextField() 
+#     date = models.DateTimeField()
+#     paid = models.BooleanField(default=False)
+#     destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name="booking_destination")
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="booking_user")
+#     agent = models.ForeignKey(TourAgent, on_delete=models.CASCADE, related_name="booking_agent")
+
+
+# ----------------------------------
+# create a choices field for nature, wildlifr, foods and culture in destination

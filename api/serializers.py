@@ -36,25 +36,22 @@ class UserSerializer(serializers.ModelSerializer):
         return request.build_absolute_url(url) 
     
 class TourAgentSerializer(serializers.ModelSerializer):
-    detail_url = serializers.HyperlinkedIdentityField(
-        view_name="agent_detail",
-        lookup_field="id"
-    )
+
     class Meta:
         model = TourAgent
-        fields =  ["detail_url", "name", "description", "image"]
+        fields =  [ "name", "description", "image"]
 
 class AgentPriceSerializer(serializers.ModelSerializer):
-    agent_url = serializers.SerializerMethodField()
+    agent_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Price
-        fields =  ["price", "agent_url"]
+        fields =  ["price", "agent_id"]
         
-    # This part needs to be updated
-    def get_agent_url(self, obj):
+    # This part needs to be updated 
+    def get_agent_id(self, obj):
         id = obj.agent.id
-        return  f"http://127.0.0.1:1200/api/agents/{id}/"
+        return  id
     
 class DestinationSerializer(serializers.ModelSerializer):
     detail_url = serializers.HyperlinkedIdentityField(
@@ -64,7 +61,7 @@ class DestinationSerializer(serializers.ModelSerializer):
     agent_price = serializers.SerializerMethodField()
     class Meta:
         model = Destination
-        fields = ["detail_url", "name", "location", "description", "weather", "accomodation", "agent_price"]
+        fields = ["detail_url", "name","image", "location", "description", "weather","category", "accomodation", "agent_price"]
 
     def get_agent_price(self, obj):
         request = self.context.get("request") 

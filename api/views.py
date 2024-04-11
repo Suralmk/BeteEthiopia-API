@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer
 from . models import TourAgent, TourAgentImages, Destination, DestinationImages
+
 @api_view(["GET"])
 def home(request):
     return Response({"message" : "sdadsad" } ,status=200)
@@ -17,7 +18,7 @@ def get_auth_for_user(user, request):
    return {
        "user": UserSerializer(user, context={"request" : request}).data,
         "tokens" : {
-                "refresh" : str(refresh),
+            "refresh" : str(refresh),
             "access" : str(refresh.access_token)
         }
    }

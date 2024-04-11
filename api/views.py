@@ -57,10 +57,15 @@ def get_otp(request):
     user = get_object_or_404(User, email=email)
     if user is None:
         return Response({"error": "Email does not exist"})
+    data = {
+            "message": "Otp succesfully send"
+    }
     otp = send_otp(email)
-    user.otp = otp
-    user.save()
-    return Response({"message": "Otp succesfully send"})
+    if otp is not None:
+        user.otp = otp
+        user.save()
+        data["email_sent"] = True
+    return Response(data, status=status.HTTP_200_OK)
 
 class TourAgentView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

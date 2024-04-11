@@ -12,4 +12,7 @@ urlpatterns = [
     # Tour agent
     path("destination/", DestinationView.as_view(), name="destination_list"),
     path("destination/<int:id>/", DestinationDetailView.as_view(), name="destination_detail"),
+
+    # Passwrod Reset
+    path("get_otp/", get_otp, name="get_otp")
 ]

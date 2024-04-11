@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
@@ -6,8 +6,9 @@ from rest_framework import permissions,  status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer
-from . models import TourAgent, TourAgentImages, Destination, DestinationImages
+from . models import TourAgent, TourAgentImages, Destination, DestinationImages, User
 
+from . utils import send_otp
 @api_view(["GET"])
 def home(request):
     return Response({"message" : "sdadsad" } ,status=200)
@@ -49,10 +50,17 @@ class SignUpView(APIView):
         user_data = get_auth_for_user(user, request)
         print(user_data)
         return Response(user_data ,status=status.HTTP_201_CREATED) 
-
-class FogetPasswordView(APIView):
-    pass
-
+    
+@api_view(["POST"])
+def get_otp(request):
+    email = request.data.get("email")
+    user = get_object_or_404(User, email=email)
+    if user is None:
+        return Response({"error": "Email does not exist"})
+    otp = send_otp(email)
+    user.otp = otp
+    user.save()
+    return Response({"message": "Otp succesfully send"})
 
 class TourAgentView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

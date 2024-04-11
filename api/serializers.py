@@ -70,3 +70,6 @@ class DestinationSerializer(serializers.ModelSerializer):
             prices.append(price)
         agent_price = AgentPriceSerializer(prices, many=True, context = {"request" : request}).data
         return agent_price
+    
+class OTPEmailSerializer(serializers.ModelSerializer):
+    pass

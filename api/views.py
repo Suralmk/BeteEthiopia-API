@@ -106,4 +106,4 @@ class DestinationDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = Destination.objects.all()
     serializer_class = DestinationSerializer
-    lookup_field = "id"
+    lookup_field = "id" 

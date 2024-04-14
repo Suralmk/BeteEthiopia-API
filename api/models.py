@@ -82,7 +82,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150, null=False, default="")
     last_name = models.CharField(max_length=150, null=False, default="")
     profile_image = models.ImageField(upload_to=user_directory_path, blank=True, null=True, default="duck.png")
-    otp = models.CharField(max_length=9, blank=True, null=True)
     active =  models.BooleanField(default=True)
     staff = models.BooleanField(default=False)
     admin = models.BooleanField(default=False)

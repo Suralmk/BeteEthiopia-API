@@ -9,6 +9,9 @@ from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer,
 from . models import TourAgent, TourAgentImages, Destination, DestinationImages, User
 
 from . utils import send_otp
+from datetime import datetime
+import pyotp
+
 @api_view(["GET"])
 def home(request):
     return Response({"message" : "sdadsad" } ,status=200)
@@ -37,8 +40,8 @@ class LogInView(APIView):
         if not user:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         user_data = get_auth_for_user(user, request)
+
         return Response(user_data)
-    
 
 class SignUpView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -49,6 +52,7 @@ class SignUpView(APIView):
         user = new_user.save()
         user_data = get_auth_for_user(user, request)
         print(user_data)
+
         return Response(user_data ,status=status.HTTP_201_CREATED) 
     
 @api_view(["POST"])
@@ -57,35 +61,53 @@ def get_otp(request):
     user = get_object_or_404(User, email=email)
     if user is None:
         return Response({"error": "Email does not exist"})
+    
     data = {
             "message": "Otp succesfully send"
     }
-    otp = send_otp(email)
-    if otp is not None:
-        user.otp = otp
-        user.save()
+    email_sent = send_otp(request, email)
+    request.session["email"] = email
+
+    if email_sent:
         data["email_sent"] = True
+
     return Response(data, status=status.HTTP_200_OK)
     
 @api_view(["POST"])
 def verify_otp(request):
     otp = request.data.get("otp")
-    email = request.data.get("email")
-    user = get_object_or_404(User, email=email)
-    if not otp:
-        return Response({'error': 'OTP is required'}, status=status.HTTP_400_BAD_REQUEST)
-    if user is None:
-        return Response({"error": "Email does not exist"})
-    if not user.otp == otp:
-        return Response({"error": "otp does not match"})
-    user.otp = ""
-    user.save()
-    data = {
-            "message": "Otp succesfully send",
-            "verified":True
-        }
-    return Response(data, status=status.HTTP_200_OK)
 
+    otp_secret = request.session["otp_secret"]
+    otp_valid_time = request.session["otp_valid"]
+
+    if otp_secret and otp_valid_time is not None:
+        valid_until = datetime.fromisoformat(otp_valid_time)
+
+        if valid_until > datetime.now():
+            totp = pyotp.TOTP(otp_secret, interval=60)
+            if totp.verify(otp):
+                data = {
+                            "message": "Otp succesfully Verified",
+                            "verified":True
+                        }
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return Response({'message': 'OTP is not valid'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'Otp has expired!'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+            return Response({'message': 'Otp is Required!'}, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateNewPassword(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        password = request.data.get("password")
+        email =  request.session["email"]
+        user = User.objects.get(email=email)
+        user.set_password(password)
+        user.save()
+        return Response({"message" : "Password Succesfully changed"},status=status.HTTP_201_CREATED )
 class TourAgentView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = TourAgent.objects.all()

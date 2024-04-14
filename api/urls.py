@@ -16,5 +16,5 @@ urlpatterns = [
     # Passwrod Reset
     path("get_otp/", get_otp, name="get_otp"),
     path("verify_otp/", verify_otp, name="verify_otp"),
-    path("create_new_password/", verify_otp, name="verify_otp"),
+    path("create_new_password/", CreateNewPassword.as_view(), name="create_new_password"),
 ]

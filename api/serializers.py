@@ -39,7 +39,7 @@ class TourAgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TourAgent
-        fields =  [ "name", "description", "image"]
+        fields =  ["id", "name", "description", "image"]
 
 class AgentPriceSerializer(serializers.ModelSerializer):
     agent_id = serializers.SerializerMethodField()

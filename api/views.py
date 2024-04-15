@@ -7,7 +7,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer
 from . models import TourAgent, TourAgentImages, Destination, DestinationImages, User
-
 from . utils import send_otp
 from datetime import datetime
 import pyotp
@@ -108,6 +107,7 @@ class CreateNewPassword(APIView):
         user.set_password(password)
         user.save()
         return Response({"message" : "Password Succesfully changed"},status=status.HTTP_201_CREATED )
+    
 class TourAgentView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = TourAgent.objects.all()

@@ -13,7 +13,7 @@ def image_directory_path(instance, filename):
     return 'image_{0}/{1}'.format(instance.name, filename)
 
 def agent_directory_path(instance, filename):
-    return 'agent_{0}/{1}'.format(instance.name, filename)
+    return 'agent_{0}/{1}'.format(instance.agent.name, filename)
 
 class UserManager(BaseUserManager):
   def create_user (self, email,  first_name, last_name,password=None ,is_active=True, is_staff=False, is_admin=False):
@@ -116,7 +116,7 @@ class User(AbstractBaseUser, PermissionsMixin):
       
 class TourAgent(models.Model):
     name = models.CharField(max_length=70)
-    image = models.ImageField(upload_to=agent_directory_path, default="duck.png")
+    # image = models.ImageField(upload_to=agent_directory_path, default="duck.png")
     description = models.CharField(max_length=500)
 
     def __str__(self):

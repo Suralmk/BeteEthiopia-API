@@ -24,6 +24,15 @@ class SignUpSerializer(serializers.Serializer):
         user.set_password(password)
         user.save()
         return user
+    
+class ImageSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    image = serializers.ImageField()
+
+    def get_photo_url(self, obj):
+        request = self.context.get("request")
+        url = obj.fingerprint.url
+        return request.build_absolute_url(url) 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,9 +46,16 @@ class UserSerializer(serializers.ModelSerializer):
     
 class TourAgentSerializer(serializers.ModelSerializer):
 
+    images = serializers.SerializerMethodField()
     class Meta:
         model = TourAgent
-        fields =  ["id", "name", "description", "image"]
+        fields =  ["id", "name", "description", "images"]
+
+    def get_images(self, obj):
+        request = self.context.get("request")
+        images = [image for image in  TourAgentImages.objects.filter(agent__id=obj.id).all()]
+        serialized_images = ImageSerializer(images, many=True, context = {"request" : request}).data
+        return serialized_images
 
 class AgentPriceSerializer(serializers.ModelSerializer):
     agent_id = serializers.SerializerMethodField()
@@ -54,14 +70,11 @@ class AgentPriceSerializer(serializers.ModelSerializer):
         return  id
     
 class DestinationSerializer(serializers.ModelSerializer):
-    detail_url = serializers.HyperlinkedIdentityField(
-        view_name="destination_detail",
-        lookup_field="id"
-    )
+
     agent_price = serializers.SerializerMethodField()
     class Meta:
         model = Destination
-        fields = ["detail_url", "name","image", "location", "description", "weather","category", "accomodation", "agent_price"]
+        fields = ["id", "name","image", "location", "description", "weather","category", "accomodation", "agent_price"]
 
     def get_agent_price(self, obj):
         request = self.context.get("request") 
@@ -71,5 +84,3 @@ class DestinationSerializer(serializers.ModelSerializer):
         agent_price = AgentPriceSerializer(prices, many=True, context = {"request" : request}).data
         return agent_price
     
-class OTPEmailSerializer(serializers.ModelSerializer):
-    pass

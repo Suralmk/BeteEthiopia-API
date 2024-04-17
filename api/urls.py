@@ -8,6 +8,7 @@ urlpatterns = [
     # Tour agent
     path("agents/", TourAgentView.as_view(), name="agent_list"),
     path("agents/<int:id>/", TourAgentDetailView.as_view(), name="agent_detail"),
+    path("agents/<int:id>/destination/", TourAgentDestinationsView.as_view(), name="agent_destination"),
 
     # Tour agent
     path("destination/", DestinationView.as_view(), name="destination_list"),

@@ -5,11 +5,12 @@ from rest_framework.views import APIView
 from rest_framework import permissions,  status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer
+from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer, AgentDestinationSerializer
 from . models import TourAgent, TourAgentImages, Destination, DestinationImages, User
 from . utils import send_otp
 from datetime import datetime
 import pyotp
+import stripe 
 
 @api_view(["GET"])
 def home(request):
@@ -46,6 +47,11 @@ class SignUpView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        email = request.data.get("email")
+        if User.objects.filter(email=email).exists():
+            return Response({'message': 'Email already exists!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        
         new_user = SignUpSerializer(data=request.data)
         new_user.is_valid(raise_exception=True)
         user = new_user.save()
@@ -58,8 +64,9 @@ class SignUpView(APIView):
 def get_otp(request):
     email = request.data.get("email")
     user = get_object_or_404(User, email=email)
+
     if user is None:
-        return Response({"error": "Email does not exist"})
+        return Response({"message": "Email does not exist"})
     
     data = {
             "message": "Otp succesfully send"
@@ -119,6 +126,13 @@ class TourAgentDetailView(generics.RetrieveAPIView):
     serializer_class = TourAgentSerializer
     lookup_field = "id"
 
+class TourAgentDestinationsView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = TourAgent.objects.all()
+    serializer_class = AgentDestinationSerializer
+    lookup_field = "id"
+    
+#Destination
 class DestinationView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = Destination.objects.all()

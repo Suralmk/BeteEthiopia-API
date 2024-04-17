@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from . models import User, TourAgent, Destination, DestinationImages, TourAgentImages, Price
 from rest_framework import reverse
 
-
 class SignUpSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
@@ -23,6 +22,7 @@ class SignUpSerializer(serializers.Serializer):
         )
         user.set_password(password)
         user.save()
+
         return user
     
 class ImageSerializer(serializers.Serializer):
@@ -42,11 +42,12 @@ class UserSerializer(serializers.ModelSerializer):
     def get_photo_url(self, obj):
         request = self.context.get("request")
         url = obj.fingerprint.url
+
         return request.build_absolute_url(url) 
     
 class TourAgentSerializer(serializers.ModelSerializer):
-
     images = serializers.SerializerMethodField()
+
     class Meta:
         model = TourAgent
         fields =  ["id", "name", "description", "images"]
@@ -55,6 +56,7 @@ class TourAgentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         images = [image for image in  TourAgentImages.objects.filter(agent__id=obj.id).all()]
         serialized_images = ImageSerializer(images, many=True, context = {"request" : request}).data
+
         return serialized_images
 
 class AgentPriceSerializer(serializers.ModelSerializer):
@@ -64,23 +66,53 @@ class AgentPriceSerializer(serializers.ModelSerializer):
         model = Price
         fields =  ["price", "agent_id"]
         
-    # This part needs to be updated 
     def get_agent_id(self, obj):
         id = obj.agent.id
         return  id
     
 class DestinationSerializer(serializers.ModelSerializer):
+    price = serializers.SerializerMethodField()
 
-    agent_price = serializers.SerializerMethodField()
     class Meta:
         model = Destination
-        fields = ["id", "name","image", "location", "description", "weather","category", "accomodation", "agent_price"]
+        fields = ["id", "name","image", "location", "description", "weather","category", "accomodation","price" ]
 
-    def get_agent_price(self, obj):
-        request = self.context.get("request") 
-        prices = []
-        for price in obj.destination_price.all():
-            prices.append(price)
-        agent_price = AgentPriceSerializer(prices, many=True, context = {"request" : request}).data
-        return agent_price
+    def get_price(self, obj):
+        request = self.context.get("request")
+        agent_id = self.context.get("id")
+
+        if agent_id:
+            price = Price.objects.filter(destination=obj.id, agent=agent_id)
+            agent_price = AgentPriceSerializer(price, many=True, context = {"request" : request}).data
+
+            return agent_price
+        else:
+            prices = [price for  price in obj.destination_price.all()]
+            agents_price = AgentPriceSerializer(prices, many=True, context = {"request" : request}).data
+
+            return agents_price
+        
+class AgentDestinationSerializer(serializers.ModelSerializer):
+    agent = serializers.SerializerMethodField()
+    destination =  serializers.SerializerMethodField()
+
+    class Meta:
+        model = TourAgent
+        fields = ["agent", "destination"]
+
+    def get_agent(self, obj):
+        return obj.id
     
+    def get_destination(self, obj):
+        request = self.context.get("request") 
+        destination = Destination.objects.filter(agent=obj.id).all()
+        serialized_destination = DestinationSerializer(
+            destination,
+            many=True, 
+            context = {
+                "request" : request,
+                "id" : obj.id
+                }
+        ).data
+
+        return serialized_destination

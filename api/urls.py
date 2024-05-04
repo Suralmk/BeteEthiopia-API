@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . views import *
 urlpatterns = [
     path("", home, name="home"),
@@ -18,4 +18,13 @@ urlpatterns = [
     path("get_otp/", get_otp, name="get_otp"),
     path("verify_otp/", verify_otp, name="verify_otp"),
     path("create_new_password/", CreateNewPassword.as_view(), name="create_new_password"),
+
+    # Search
+    path("search/<str:query>/", SearchView.as_view(), name="search"),
+
+    # Search
+    path("booking/", BookingView.as_view(), name="booking"),
+
+    # Payment
+    path('payment/', include("payment.urls")),
 ]

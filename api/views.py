@@ -5,12 +5,24 @@ from rest_framework.views import APIView
 from rest_framework import permissions,  status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from . serializers import UserSerializer, SignUpSerializer, TourAgentSerializer, DestinationSerializer, AgentDestinationSerializer
-from . models import TourAgent, TourAgentImages, Destination, DestinationImages, User
+from django.db.models import Q
+from . serializers import ( UserSerializer, 
+                           SignUpSerializer, 
+                           TourAgentSerializer, 
+                           DestinationSerializer, 
+                           AgentDestinationSerializer,
+                           SerachDestinationSerializer,
+                           BookingSerializer)
+
+from . models import(
+            User, 
+            TourAgent,
+            Destination,
+            Booking
+        )
 from . utils import send_otp
 from datetime import datetime
 import pyotp
-import stripe 
 
 @api_view(["GET"])
 def home(request):
@@ -51,7 +63,6 @@ class SignUpView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({'message': 'Email already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 
-        
         new_user = SignUpSerializer(data=request.data)
         new_user.is_valid(raise_exception=True)
         user = new_user.save()
@@ -143,3 +154,37 @@ class DestinationDetailView(generics.RetrieveAPIView):
     queryset = Destination.objects.all()
     serializer_class = DestinationSerializer
     lookup_field = "id" 
+
+#Search Agenst and Destination
+class SearchView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def get(self, request, query=None):
+
+        if query is not None:
+            destination = Destination.objects.filter(
+                Q(name__icontains=query) 
+            ).all()
+            
+        print(query)
+        if destination is not None:
+            destination_data = SerachDestinationSerializer(
+                destination, 
+                many=True,
+                context = {
+                    "request": request
+                }).data
+
+        result = [a for a in destination_data  if a is not None ]
+        print(result)
+
+        return Response(
+            result,
+            status=status.HTTP_200_OK
+        )
+    
+class BookingView(generics.ListCreateAPIView):
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    permission_classes = [permissions.AllowAny]
+

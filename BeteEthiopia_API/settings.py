@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-oxz0r9p(qwt9=&#%x7j=t6*(0=$ksiy$60f!m^qkkrp(o46bim
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "192.168.244.66", "192.168.52.77"]
+ALLOWED_HOSTS = ["127.0.0.1", "192.168.255.77", "192.168.18.77"]
 # Rest ramework setting
 
 
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "api",
+    "payment",
 
     "rest_framework_simplejwt",
     "rest_framework"

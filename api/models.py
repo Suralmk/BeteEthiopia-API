@@ -173,7 +173,7 @@ class Booking(models.Model):
     country = models.CharField(max_length=100)
     guest_number = models.IntegerField()
     special_need = models.TextField() 
-    for_date = models.DateTimeField()
+    for_date = models.DateField(blank=True, null=True)
     booking_date = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
 

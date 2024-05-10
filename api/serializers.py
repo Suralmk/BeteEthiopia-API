@@ -216,15 +216,29 @@ class SerachDestinationSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     """
-        Serializes the booking informs ron the user
-        and validates then it will save to the database
+        Serializes the booking information from the user
+        and validates then it will saved to the database
     """
+    paid = serializers.BooleanField(read_only=True)
     class Meta:
         model = Booking
         fields = "__all__"
 
-    def create(self, validated_data):
-        return super().create(validated_data)
+    # def create(self, validated_data):
+    #     print(validated_data)
+    #     user_id= validated_data.get("user_id")
+    #     agent_id = validated_data.get("agent_id")
+    #     guest_number = validated_data.get("guest_number")
+    #     date = validated_data.get("date")
+    #     special_need = validated_data.get("special_need")
+    #     special_need = validated_data.get("special_need")
+    #     destination_id = validated_data.get("destination_id")
+
+    #     booking = Booking.objects.create(
+
+    #     )
+    #     booking.save()
+    #     return super().create(validated_data)
 
 
     def validate(self, attrs):

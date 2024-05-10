@@ -24,6 +24,7 @@ urlpatterns = [
 
     # Search
     path("booking/", BookingView.as_view(), name="booking"),
+    path("booking/<int:id>/", BookingDetailView.as_view(), name="booking_detail"),
 
     # Payment
     path('payment/', include("payment.urls")),

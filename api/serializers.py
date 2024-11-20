@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from . models import(
-    User, 
-    TourAgent,
-      Destination,
-        DestinationImages,
-          TourAgentImages,
-            Price, Booking
-)
+from . models import User
+from destination.models import Destination, Price, DestinationImages
+from agent.models import Agent
+from booking.models import Booking
+from destination.models import Price, Destination
+from django.contrib.auth.password_validation import validate_password
+
+
 
 class SignUpSerializer(serializers.Serializer):
     first_name = serializers.CharField()
@@ -48,22 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_photo_url(self, obj):
         request = self.context.get("request")
         url = obj.fingerprint.url
-
         return request.build_absolute_url(url) 
-    
-class TourAgentSerializer(serializers.ModelSerializer):
-    images = serializers.SerializerMethodField()
-
-    class Meta:
-        model = TourAgent
-        fields =  ["id", "name", "description", "images"]
-
-    def get_images(self, obj):
-        request = self.context.get("request")
-        images = [image for image in  TourAgentImages.objects.filter(agent__id=obj.id).all()]
-        serialized_images = ImageSerializer(images, many=True, context = {"request" : request}).data
-
-        return serialized_images
 
 class AgentPriceSerializer(serializers.ModelSerializer):
     agent_id = serializers.SerializerMethodField()
@@ -75,13 +60,24 @@ class AgentPriceSerializer(serializers.ModelSerializer):
     def get_agent_id(self, obj):
         id = obj.agent.id
         return  id
-    
-class DestinationSerializer(serializers.ModelSerializer):
-    price = serializers.SerializerMethodField()
-    images = serializers.SerializerMethodField()
+     
+class SerachAgentSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Destination
+        model=Agent
+        fields = [
+            "id",
+            "name",
+            "image",
+            "description",
+        ]
+        
+class SerachDestinationSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+
+    class Meta:
+        model=Destination
         fields = [
                 "id", 
                 "name",
@@ -91,34 +87,10 @@ class DestinationSerializer(serializers.ModelSerializer):
                 "weather",
                 "category", 
                 "accomodation",
-                "price" 
+                "price", 
             ]
-
-    def get_price(self, obj):
-        request = self.context.get("request")
-        agent_id = self.context.get("id")
-
-        if agent_id:
-            price = Price.objects.filter(destination=obj.id, agent=agent_id)
-            agent_price = AgentPriceSerializer(
-                    price, 
-                    many=True, 
-                    context = {"request" : request}
-                ).data
-
-            return agent_price
-        else:
-            prices = [price for  price in obj.destination_price.all()]
-            agents_price = AgentPriceSerializer(
-                                        prices, 
-                                        many=True, 
-                                        context = {"request" : request}
-                                                ).data
-
-            return agents_price
         
     def get_images(self, obj):
-
         request = self.context.get("request")
         images = [image for image in DestinationImages.objects.filter(destination__id=obj.id).all()]
 
@@ -127,67 +99,6 @@ class DestinationSerializer(serializers.ModelSerializer):
             many=True,
             context = {"request" : request}
             ).data
-        return  serialized_image
-        
-class AgentDestinationSerializer(serializers.ModelSerializer):
-    agent = serializers.SerializerMethodField()
-    destination =  serializers.SerializerMethodField()
-
-    class Meta:
-        model = TourAgent
-        fields = ["agent", "destination"]
-
-    def get_agent(self, obj):
-        return obj.id
-    
-    def get_destination(self, obj):
-        request = self.context.get("request") 
-        destination = Destination.objects.filter(agent=obj.id).all()
-        serialized_destination = DestinationSerializer(
-            destination,
-            many=True, 
-            context = {
-                "request" : request,
-                "id" : obj.id
-                }
-        ).data
-
-        return serialized_destination
-    
-class SerachAgentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model=TourAgent
-        fields = [
-            "id",
-            "name",
-            "image",
-            "description",
-        ]
-        
-class SerachDestinationSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
-    price = serializers.SerializerMethodField()
-
-    class Meta:
-        model=Destination
-        fields = [
-            "id",
-            "name",
-            "image",
-            "description",
-            "price"
-        ]
-
-    def get_image(self, obj):
-        print(obj.id)
-        request = self.context.get("request")
-        images = DestinationImages.objects.filter(destination__id=obj.id).first()
-
-        serialized_image = ImageSerializer(
-                images,  
-                context = {"request" : request}
-                ).data
         return  serialized_image
     
     def get_price(self, obj):
@@ -213,33 +124,50 @@ class SerachDestinationSerializer(serializers.ModelSerializer):
 
             return agents_price    
         
+class BookingHistorySerializer(serializers.ModelSerializer):
+    agent =  serializers.SerializerMethodField()
+    destination = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
 
-class BookingSerializer(serializers.ModelSerializer):
-    """
-        Serializes the booking information from the user
-        and validates then it will saved to the database
-    """
-    paid = serializers.BooleanField(read_only=True)
     class Meta:
         model = Booking
         fields = "__all__"
 
-    # def create(self, validated_data):
-    #     print(validated_data)
-    #     user_id= validated_data.get("user_id")
-    #     agent_id = validated_data.get("agent_id")
-    #     guest_number = validated_data.get("guest_number")
-    #     date = validated_data.get("date")
-    #     special_need = validated_data.get("special_need")
-    #     special_need = validated_data.get("special_need")
-    #     destination_id = validated_data.get("destination_id")
 
-    #     booking = Booking.objects.create(
+    def get_agent(self, obj):
+        agent_id = obj.agent.id
+        agent_name = obj.agent.name
+        return {
+            "id" : agent_id,
+            "name" : agent_name
+        }
 
-    #     )
-    #     booking.save()
-    #     return super().create(validated_data)
+    def get_destination(self, obj):
+        destination_id= obj.destination.id
+        destination_name = obj.destination.name
+        return {
+            "id" : destination_id,
+            "name" : destination_name
+        }
 
+    def get_price(self, obj):
+        pass
 
-    def validate(self, attrs):
-        return super().validate(attrs)
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model =  User
+        fields = ["first_name", "last_name", "email", "profile_image"]
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exclude(id=self.instance.id).exists():
+            raise serializers.ValidationError("This email is already in use by another account.")
+        return value
+    
+class PasswordUpdateSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value

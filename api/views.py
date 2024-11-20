@@ -6,27 +6,21 @@ from rest_framework import permissions,  status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from . serializers import ( UserSerializer, 
-                           SignUpSerializer, 
-                           TourAgentSerializer, 
-                           DestinationSerializer, 
-                           AgentDestinationSerializer,
-                           SerachDestinationSerializer,
-                           BookingSerializer)
+from . serializers import *
 
-from . models import(
-            User, 
-            TourAgent,
-            Destination,
-            Booking
-        )
+from . models import User       
 from . utils import send_otp
 from datetime import datetime
 import pyotp
+from destination.models import Destination
+from django.contrib.auth import update_session_auth_hash
+import base64
+from django.core.files.base import ContentFile
+
 
 @api_view(["GET"])
 def home(request):
-    return Response({"message" : "sdadsad" } ,status=200)
+    return Response({"message" : "This is Zion Travel API" } ,status=200)
 
 def get_auth_for_user(user, request):
    refresh =  RefreshToken.for_user(user)
@@ -125,35 +119,6 @@ class CreateNewPassword(APIView):
         user.set_password(password)
         user.save()
         return Response({"message" : "Password Succesfully changed"},status=status.HTTP_201_CREATED )
-    
-class TourAgentView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = TourAgent.objects.all()
-    serializer_class = TourAgentSerializer
-
-class TourAgentDetailView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = TourAgent.objects.all()
-    serializer_class = TourAgentSerializer
-    lookup_field = "id"
-
-class TourAgentDestinationsView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = TourAgent.objects.all()
-    serializer_class = AgentDestinationSerializer
-    lookup_field = "id"
-    
-#Destination
-class DestinationView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Destination.objects.all()
-    serializer_class = DestinationSerializer
-
-class DestinationDetailView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Destination.objects.all()
-    serializer_class = DestinationSerializer
-    lookup_field = "id" 
 
 #Search Agenst and Destination
 class SearchView(APIView):
@@ -166,7 +131,6 @@ class SearchView(APIView):
                 Q(name__icontains=query) 
             ).all()
             
-        print(query)
         if destination is not None:
             destination_data = SerachDestinationSerializer(
                 destination, 
@@ -176,24 +140,106 @@ class SearchView(APIView):
                 }).data
 
         result = [a for a in destination_data  if a is not None ]
-        print(result)
 
         return Response(
             result,
             status=status.HTTP_200_OK
         )
     
-class BookingView(generics.ListCreateAPIView):
-    serializer_class = BookingSerializer
-    queryset = Booking.objects.all()
-    permission_classes = [permissions.AllowAny]
-
-class BookingDetailView(APIView):
+# Personal information views
+class AccountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, booking_id):
-        booking = get_object_or_404(Booking, id=booking_id)
+    def put(self, request):
+        user = request.user
 
-        serilaized_data = BookingSerializer(booking).data
-        return Response(serilaized_data)
+        profile_data = {
+            key : value for key, value in request.data.items() if key in ["first_name", "last_name", "email"]
+        }
+        password_data = {
+            key : value for key, value in request.data.items() if key in ["old_password", "new_password"]
+        }
 
+        profile_image_data = {
+            key: value for key, value in request.data.items() if key in ["profile_image"]
+        }
+        if profile_data:
+            profile_serializer = ProfileUpdateSerializer(user, data=profile_data, partial=True)
+            if profile_serializer.is_valid():
+                profile_serializer.save()
+            else:
+                return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        if password_data:
+            password_serializer = PasswordUpdateSerializer(user, data=password_data, partial=True)
+            if password_serializer.is_valid(raise_exception=True):
+                old_password = password_serializer.validated_data['old_password']
+                new_password = password_serializer.validated_data['new_password']
+                if not user.check_password(old_password):
+                    return Response({"message"  : "Old password is incorrect!"},  status=status.HTTP_400_BAD_REQUEST)
+
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user)
+            else:
+                return Response(password_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        if profile_image_data: 
+            photo = request.data.get("profile_image")
+            try:
+            
+                if ";base64," in photo:
+                    format, imgstr = photo.split(";base64,")
+                    ext = format.split("/")[-1]
+                    file_name = f"profile_{user.id}.{ext}" 
+                    img_data = ContentFile(base64.b64decode(imgstr), name=file_name)
+                else:
+                    img_data = ContentFile(base64.b64decode(photo), name=f"profile_{user.id}.png")
+
+                    user.profile_image.save(img_data.name, img_data, save=True)
+                return Response({"message": "Profile image updated successfully"}, status=status.HTTP_200_OK)
+
+            except Exception as e:
+                return Response({"message": f"Failed to decode and save image: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({"message" : "Profile Updated Succesfully"} , status=status.HTTP_200_OK)
+
+class PaymentHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request):
+        try:
+            bookings = Booking.objects.filter(user=request.user)
+            if not bookings.exists():
+                return Response(
+                    {"message": "No booking history found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+                
+            serializer = BookingHistorySerializer(bookings, many=True, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"message": "An error occurred while retrieving payment history."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class BookingHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request):
+        try:
+            bookings = Booking.objects.filter(user=request.user)
+            if not bookings.exists():
+                return Response(
+                    {"message": "No booking history found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+                
+            serializer = BookingHistorySerializer(bookings, many=True, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"message": "An error occurred while retrieving booking history."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

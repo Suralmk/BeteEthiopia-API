@@ -2,6 +2,7 @@ from django.core.mail import EmailMessage
 import pyotp
 from datetime import datetime, timedelta
 import uuid
+from django.conf import settings
 
 def send_otp(request, email):
     totp = pyotp.TOTP(pyotp.random_base32(), interval=60)
@@ -11,8 +12,8 @@ def send_otp(request, email):
     request.session["otp_valid"] = str(valid_time)
     email = EmailMessage(
         subject="OTP Request for Password Reset",
-        body=f"Here is your OTP to reset your password {otp}",
-        from_email="surafelmelaku940@gmail.com",
+        body=f"""Here is your OTP to reset your password {otp}. Thank you for using this app!""",
+        from_email=settings.EMAIL_HOST_USER,
         to=[email]
     )
     email.send()

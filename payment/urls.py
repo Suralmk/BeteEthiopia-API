@@ -1,14 +1,9 @@
 from django.urls import path
 from . views import *
+from . webhook import stripe_webhook
 
 urlpatterns = [
-    #Chapa checkout
-    path("chapa_checkout/", chapa_checkout, name="chapa_checkout"),
-
-    # PayPal chekout
-    path("paypal_checkout/",paypal_checkout, name="paypal_checkout"),
-
-    # Stripe Checkout
-    path("stripe_checkout/",stripe_checkout_sheet, name="stripe_checkout"),
-
+    path("intent/",PaymentIntent.as_view(), name="payment_intent"),
+    path("history/",PaymentHistoryView.as_view(), name="payment_history"),
+    path("webhook/",stripe_webhook, name="wehook"),
 ]
